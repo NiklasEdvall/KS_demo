@@ -1,0 +1,256 @@
+---
+title: "ASSR/VRA Demo"
+author: "Niklas Edvall (niklas.edvall@ki.se)"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+library(tidyr)
+library(ggplot2)
+library(psych)
+library(tidyverse)
+library(writexl)
+library(readxl)
+```
+
+## ASSR & VRA-analys
+Suggested analysis of ASSR & VRA data investigating predictive power of ASSR for future VRA thresholds in children.
+
+## Example data (excluded from knit)
+
+n = 40 (ears)
+
+Simulated data according to hypothesis of linear relationship between ASSR and VRA thresholds. VRA measured at two timepoints.
+
+```{r, include = FALSE}
+ASSR <- setNames(data.frame(matrix(ncol = 7, nrow = 0)), c("ID", "ASSR_500", "ASSR_1000", "ASSR_2000", "ASSR_4000", "Age", "Sex"))
+VRA <- setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("ID", "VRA_500", "VRA_1000", "VRA_2000", "VRA_4000"))
+
+VRA2 <- setNames(data.frame(matrix(ncol = 5, nrow = 0)), c("ID", "VRA2_500", "VRA2_1000", "VRA2_2000", "VRA2_4000"))
+
+n_ears = 40
+
+#Loop through simulating data points
+for (i in c(1:n_ears))
+  
+{
+#randomize 4 threshold values
+a <- round(rnorm(n = 1, mean = 40, sd = 10), 1)
+b <- round(rnorm(n = 1, mean = 40, sd = 10), 1)
+c <- round(rnorm(n = 1, mean = 40, sd = 10), 1)
+d <- round(rnorm(n = 1, mean = 40, sd = 10), 1)
+
+r <- round(rnorm(n = 1, mean = 10, sd = 15), 1) #random linear shift
+  
+ASSR[i,1] <- i #incremental ID
+
+ASSR[i,2] <- a
+ASSR[i,3] <- b
+ASSR[i,4] <- c
+ASSR[i,5] <- d
+
+#Age and sex for ASSR
+age <- round(rnorm(n = 1, mean = 10, sd = 3), 0)
+if (age < 0) {age <- (age * -1)} #Age positive only
+
+ASSR[i, 6] <- age
+ASSR[i, 7] <- sample(c("M", "F"), 1)
+
+VRA[i,1] <- i #incremental ID
+
+VRA[i,2] <- a + r
+VRA[i,3] <- b + r
+VRA[i,4] <- c + r
+VRA[i,5] <- d + r
+
+r <- round(rnorm(n = 1, mean = 10, sd = 15), 1) #new random linear shift for second VRA measurement
+
+VRA2[i,1] <- i #incremental ID
+
+VRA2[i,2] <- a + r
+VRA2[i,3] <- b + r
+VRA2[i,4] <- c + r
+VRA2[i,5] <- d + r
+
+rm(a,b,c,d,r,age)
+
+}
+
+#Pivot to long table format for plots
+ASSR_long <- pivot_longer(ASSR, cols = starts_with("ASSR"))
+VRA_long <- pivot_longer(VRA, cols = starts_with("VRA"))
+
+VRA2_long <- pivot_longer(VRA2, cols = starts_with("VRA2"))
+
+#Set factor order
+ASSR_long$name <- factor(ASSR_long$name,levels = c("ASSR_500", "ASSR_1000", "ASSR_2000", "ASSR_4000"))
+VRA_long$name <- factor(VRA_long$name,levels = c("VRA_500", "VRA_1000", "VRA_2000", "VRA_4000"))
+
+VRA2_long$name <- factor(VRA2_long$name,levels = c("VRA2_500", "VRA2_1000", "VRA2_2000", "VRA2_4000"))
+
+#Save VRA and ASSR dataframes as excel for demo
+
+write_xlsx(ASSR, path = "ASSR_data.xlsx")
+write_xlsx(VRA, path = "VRA_data.xlsx")
+write_xlsx(VRA2, path = "VRA2_data.xlsx")
+
+write.csv(ASSR, file = "ASSR_data.csv", row.names = F)
+write.csv(VRA, file = "VRA_data.csv", row.names = F)
+write.csv(VRA2, file = "VRA2_data.csv", row.names = F)
+
+```
+
+## Load data from xlsx or csv
+
+```{r}
+
+VRA <- read_excel("VRA_data.xlsx")
+VRA2 <- read_excel("VRA2_data.xlsx")
+ASSR<- read_excel("ASSR_data.xlsx")
+
+VRA <- read.csv("VRA_data.csv")
+VRA2 <- read.csv("VRA2_data.csv")
+ASSR <- read.csv("ASSR_data.csv")
+
+```
+
+## Overview of example data
+```{r}
+head(ASSR)
+
+head(VRA)
+
+table(ASSR$Sex)
+
+hist(ASSR$Age, main = "Age distribution")
+
+```
+
+## Boxplots using ggplot2 (Tukey)
+
+```{r, figures-side, fig.show="hold", out.width="50%"}
+#Boxplot ASSR
+ggplot(data = ASSR_long, aes(x = name, y = value)) +
+         geom_boxplot() +
+         ylim(20, 70) +
+         scale_x_discrete(labels = c('500','1000','2000', '4000')) +
+         labs(title = "ASSR - Hearing thresholds", x = "Frequency (Hz)", y = "Threshold level (dBnHL)") +
+         theme(plot.title = element_text(hjust = 0.5))
+
+#Boxplot VRA
+ggplot(data = VRA_long, aes(x = name, y = value)) +
+         geom_boxplot() +
+         ylim(20, 70) +
+         scale_x_discrete(labels = c('500','1000','2000', '4000')) +
+         labs(title = "VRA - Hearing thresholds", x = "Frequency (Hz)", y = "Threshold level (dBnHL)") +
+         theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+## Linear regression per PTA4 frequency
+
+Dependent variables: VRA thresholds
+
+Indepent variables: ASSR thresholds
+
+```{r}
+mod_ASSR_500 <- lm(VRA$VRA_500 ~ ASSR$ASSR_500)
+mod_ASSR_1000 <- lm(VRA$VRA_1000 ~ ASSR$ASSR_1000)
+mod_ASSR_2000 <- lm(VRA$VRA_2000 ~ ASSR$ASSR_2000)
+mod_ASSR_4000 <- lm(VRA$VRA_4000 ~ ASSR$ASSR_4000)
+```
+
+## 500Hz, VRA ~ ASSR results
+
+```{r}
+summary(mod_ASSR_500)
+
+ggplot(data = ASSR, aes(ASSR$ASSR_500, VRA$VRA_500)) +
+  geom_point() +
+  stat_smooth(method = lm) +
+
+  labs(title = "500Hz threshold, linear regression", x = "ASSR Threshold (dBnHL)", y = "VRA Threshold (dBHL)") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+## 1000Hz, VRA ~ ASSR results
+
+```{r}
+summary(mod_ASSR_1000)
+
+ggplot(data = ASSR, aes(ASSR$ASSR_1000, VRA$VRA_1000)) +
+  geom_point() +
+  stat_smooth(method = lm) +
+
+  labs(title = "1000Hz threshold, linear regression", x = "ASSR Threshold (dBnHL)", y = "VRA Threshold (dBHL)") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+## 2000Hz, VRA ~ ASSR results
+
+```{r}
+summary(mod_ASSR_2000)
+
+ggplot(data = ASSR, aes(ASSR$ASSR_2000, VRA$VRA_2000)) +
+  geom_point() +
+  stat_smooth(method = lm) +
+
+  labs(title = "2000Hz threshold, linear regression", x = "ASSR Threshold (dBnHL)", y = "VRA Threshold (dBHL)") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+## 4000Hz, VRA ~ ASSR results
+
+```{r}
+summary(mod_ASSR_4000)
+
+ggplot(data = ASSR, aes(ASSR$ASSR_4000, VRA$VRA_4000)) +
+  geom_point() +
+  stat_smooth(method = lm) +
+
+  labs(title = "4000Hz threshold, linear regression", x = "ASSR Threshold (dBnHL)", y = "VRA Threshold (dBHL)") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+## Intraclass correlation for test re-test of VRA
+## (ICC3,k) Two-way mixed, average measures, consistency
+
+```{r}
+#Transform VRA data by frequency for ICC analysis
+VRA500 <- data.frame(VRA_500 = VRA$VRA_500, VRA2_500 = VRA2$VRA2_500)
+VRA1000 <- data.frame(VRA_1000 = VRA$VRA_1000, VRA2_1000 = VRA2$VRA2_1000)
+VRA2000 <- data.frame(VRA_2000 = VRA$VRA_2000, VRA2_2000 = VRA2$VRA2_2000)
+VRA4000 <- data.frame(VRA_4000 = VRA$VRA_4000, VRA2_4000 = VRA2$VRA2_4000)
+
+#calculate ICC
+ICC(VRA500)
+ICC(VRA1000)
+ICC(VRA2000)
+ICC(VRA4000)
+
+#Specify session in VRA dataframes
+VRA_long$session <- rep(1, each=nrow(VRA_long))
+VRA2_long$session <- rep(2, each=nrow(VRA2_long))
+
+#Gather VRA and VRA2 for plot
+all_VRA <- rbind(
+VRA_long %>% 
+  mutate(name = str_replace(name, "VRA_", "")),
+
+VRA2_long %>% 
+  mutate(name = str_replace(name, "VRA2_", "")))
+
+#Specify session as factor
+all_VRA$session <- factor(all_VRA$session,levels = c("1", "2"))
+ 
+# grouped boxplot
+ggplot(all_VRA, aes(x=name, y=value, fill=session)) + 
+    geom_boxplot() +
+    labs(title = "VRA thresholds for session 1 & 2", x = "Frequency (Hz)", y = "VRA Threshold (dBHL)") +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
