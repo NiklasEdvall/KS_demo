@@ -1,0 +1,8 @@
+﻿Variable name,Type,Labels,Description
+ID,Factor,,Unique identifier per subject
+ASSR_500,Numeric,,ASSR threshold at 500Hz
+ASSR_1000,Numeric,,ASSR threshold at 1000Hz
+ASSR_2000,Numeric,,ASSR threshold at 2000Hz
+ASSR_4000,Numeric,,ASSR threshold at 4000Hz
+Age,Numeric,,Age in years at test
+Sex,Factor,"1 = M, 2 = F","Sex, as described at birth"
