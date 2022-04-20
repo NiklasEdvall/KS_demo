@@ -1,6 +1,6 @@
-ASSR.csv
-VRA.csv
-VRA2.csv
+ASSR_data.csv
+VRA_data.csv
+VRA2_data.csv
 *.xlsx
 *.html
 .Rhistory
