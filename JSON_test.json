@@ -1,0 +1,18 @@
+{
+  "name": {
+    "firstName": "Flavio",
+    "lastName": "Copes"
+  },
+  "age": 35,
+  "dogs": [
+    { "name": "Roger" },
+    { "name": "Syd" }
+  ],
+  "country": {
+    "details": {
+      "name": "Italy"
+    }
+  }
+}
+
+https://www.geeksforgeeks.org/working-with-json-files-in-r-programming/
