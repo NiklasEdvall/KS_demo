@@ -1,4 +1,6 @@
-*.csv
+ASSR.csv
+VRA.csv
+VRA2.csv
 *.xlsx
 *.html
 .Rhistory
